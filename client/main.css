@@ -4,18 +4,18 @@ body {
   background-image: linear-gradient(to bottom, #315481, #918e82 100%);
   background-attachment: fixed;
 
-  display: flex;
+  /* display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; */
 
-  /* position: absolute;
+  position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
 
   padding: 0;
-  margin: 0; */
+  margin: 0;
 
   font-size: 14px;
 }
@@ -37,7 +37,7 @@ button:focus {
 .app {
   display: flex;
   flex-direction: column;
-  min-width: 900px;
+  /* min-width: 900px; */
   height: 100vh;
 }
 
@@ -130,4 +130,13 @@ header {
 .tasks > li > button {
   justify-self: flex-end;
   background-color: #ff3046;
+}
+
+.filter {
+  display: flex;
+  justify-content: center;
+}
+
+.filter > button {
+  background-color: #62807e;
 }

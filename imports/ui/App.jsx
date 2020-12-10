@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data'
 import { TasksCollection } from '/imports/api/TasksCollection'
 import { Task } from './Task.jsx';
@@ -22,7 +22,11 @@ const deleteTask = ({ _id }) => {
 }
 
 export const App = () => {
-  const tasks = useTracker(() => TasksCollection.find({}, { sort: { createdAt: -1 } }).fetch());
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const hideCompletedFilter = { isChecked: { $ne: true } };
+  const tasks = useTracker(() => TasksCollection.find(hideCompleted ? hideCompletedFilter : {}, { sort: { createdAt: -1 } }).fetch());
+  const pendingTasksCount = useTracker(() => TasksCollection.find(hideCompletedFilter).count());
+  const pendingTasksTitle = `${pendingTasksCount ? ` (${pendingTasksCount})` : ''}`;
   
   return (
     <div className="app">
@@ -30,13 +34,18 @@ export const App = () => {
         <div className="app-bar">
           <div className="app-header">
           <h1>📝️ To Do List</h1>
+          <span>Total No.{ pendingTasksTitle }</span>
           </div>
         </div>
       </header>
 
       <div className="main">
         <TaskForm />
-
+        <div className="filter">
+          <button onClick={() => setHideCompleted(!hideCompleted)}>
+            {hideCompleted ? 'ShowAll' : 'Hide Completed'}
+          </button>
+        </div>
         <ul className="tasks">
           {tasks.map(task => (
             <Task
