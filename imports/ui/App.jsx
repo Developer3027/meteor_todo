@@ -1,61 +1,100 @@
-import React, { useState } from 'react';
-import { useTracker } from 'meteor/react-meteor-data'
-import { TasksCollection } from '/imports/api/TasksCollection'
-import { Task } from './Task.jsx';
-import { TaskForm } from './TaskForm'
+import React, { useState, Fragment } from 'react';
+import { useTracker } from 'meteor/react-meteor-data';
+import { TasksCollection } from '/imports/api/TasksCollection';
+import { Task } from './Task';
+import { TaskForm } from './TaskForm';
+import { LoginForm } from './LoginForm';
 
-// const tasks = [
-//   {_id: 1, text: 'check current site for apple meta tag.'},
-//   {_id: 2, text: 'task 2'},
-//   {_id: 3, text: 'task 3'},
-//   {_id: 4, text: 'task 4'}
-// ]
+const toggleChecked = ({ _id, isChecked }) => {
+  TasksCollection.update(_id, {
+    $set: {
+      isChecked: !isChecked,
+    },
+  });
+};
 
-const toggleChecked =({ _id, isChecked }) => {
-  TasksCollection.update(_id, { 
-    $set: { isChecked: !isChecked }
-   })
-}
-
-const deleteTask = ({ _id }) => {
-  TasksCollection.remove(_id);
-}
+const deleteTask = ({ _id }) => TasksCollection.remove(_id);
 
 export const App = () => {
+  const user = useTracker(() => Meteor.user());
+
   const [hideCompleted, setHideCompleted] = useState(false);
+
   const hideCompletedFilter = { isChecked: { $ne: true } };
-  const tasks = useTracker(() => TasksCollection.find(hideCompleted ? hideCompletedFilter : {}, { sort: { createdAt: -1 } }).fetch());
-  const pendingTasksCount = useTracker(() => TasksCollection.find(hideCompletedFilter).count());
-  const pendingTasksTitle = `${pendingTasksCount ? ` (${pendingTasksCount})` : ''}`;
-  
+
+  const userFilter = user ? { userId: user._id } : {};
+
+  const pendingOnlyFilter = { ...hideCompletedFilter, ...userFilter };
+
+  const tasks = useTracker(() => {
+    if (!user) {
+      return [];
+    }
+
+    return TasksCollection.find(
+      hideCompleted ? pendingOnlyFilter : userFilter,
+      {
+        sort: { createdAt: -1 },
+      }
+    ).fetch();
+  });
+
+  const pendingTasksCount = useTracker(() => {
+    if (!user) {
+      return 0;
+    }
+
+    return TasksCollection.find(pendingOnlyFilter).count();
+  });
+
+  const pendingTasksTitle = `${
+    pendingTasksCount ? ` (${pendingTasksCount})` : ''
+  }`;
+
+  const logout = () => Meteor.logout();
+
   return (
     <div className="app">
       <header>
         <div className="app-bar">
           <div className="app-header">
-          <h1>📝️ To Do List</h1>
-          <span>Total No.{ pendingTasksTitle }</span>
+            <h1>
+              📝️ To Do List
+              {pendingTasksTitle}
+            </h1>
           </div>
         </div>
       </header>
 
       <div className="main">
-        <TaskForm />
-        <div className="filter">
-          <button onClick={() => setHideCompleted(!hideCompleted)}>
-            {hideCompleted ? 'ShowAll' : 'Hide Completed'}
-          </button>
-        </div>
-        <ul className="tasks">
-          {tasks.map(task => (
-            <Task
-              key={task._id}
-              task={task}
-              onCheckboxClick={toggleChecked}
-              onDeleteClick={deleteTask}
-            />
-          ))}
-        </ul>
+        {user ? (
+          <Fragment>
+            <div className="user">
+              <button onClick={logout}>Logout {user.username} 🚪</button>
+            </div>
+
+            <TaskForm user={user} />
+
+            <div className="filter">
+              <button onClick={() => setHideCompleted(!hideCompleted)}>
+                {hideCompleted ? 'Show All' : 'Hide Completed'}
+              </button>
+            </div>
+
+            <ul className="tasks">
+              {tasks.map(task => (
+                <Task
+                  key={task._id}
+                  task={task}
+                  onCheckboxClick={toggleChecked}
+                  onDeleteClick={deleteTask}
+                />
+              ))}
+            </ul>
+          </Fragment>
+        ) : (
+          <LoginForm />
+        )}
       </div>
     </div>
   );
